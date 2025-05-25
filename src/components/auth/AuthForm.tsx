@@ -21,10 +21,30 @@ export const AuthForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!isLogin && !userName) {
+      toast({
+        title: "Missing information",
+        description: "Please enter your name to create an account.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
       if (isLogin) {
+        console.log('Attempting to sign in with:', email);
         await signIn(email, password);
         toast({
           title: "Welcome back!",
@@ -32,16 +52,21 @@ export const AuthForm = () => {
         });
         navigate('/dashboard');
       } else {
+        console.log('Attempting to sign up with:', email);
         await signUp(email, password, { user_name: userName });
         toast({
           title: "Account created!",
-          description: "Please check your email to verify your account.",
+          description: "Please check your email to verify your account before signing in.",
         });
+        // Switch to login mode after successful signup
+        setIsLogin(true);
+        setPassword(''); // Clear password for security
       }
     } catch (error: any) {
+      console.error('Auth error:', error);
       toast({
-        title: "Error",
-        description: error.message,
+        title: "Authentication Error",
+        description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -74,7 +99,7 @@ export const AuthForm = () => {
                   placeholder="Enter your name"
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
-                  required
+                  required={!isLogin}
                 />
               </div>
             )}
@@ -100,6 +125,7 @@ export const AuthForm = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={6}
               />
             </div>
             
@@ -113,6 +139,7 @@ export const AuthForm = () => {
               type="button"
               onClick={() => setIsLogin(!isLogin)}
               className="text-sm text-blue-600 hover:underline"
+              disabled={loading}
             >
               {isLogin 
                 ? "Don't have an account? Sign up" 
@@ -120,6 +147,14 @@ export const AuthForm = () => {
               }
             </button>
           </div>
+
+          {isLogin && (
+            <div className="mt-4 p-3 bg-blue-50 rounded-md">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> If you just signed up, please check your email and click the confirmation link before signing in.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
