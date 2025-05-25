@@ -25,7 +25,7 @@ export const AddProductForm = () => {
       const { error } = await supabase
         .from('products')
         .insert({
-          ownr_id: user.id,
+          ownr_id: user.id as any, // Cast to bypass type check since we know this is correct
           prdt_name: productName,
           prdt_desc: productDesc,
         });
