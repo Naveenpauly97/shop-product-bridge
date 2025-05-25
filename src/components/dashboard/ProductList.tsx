@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Trash2, Package } from 'lucide-react';
 
 interface Product {
-  prdt_id: number;
+  prdt_id: string;
   prdt_name: string;
   prdt_desc: string;
   created_at: string;
@@ -44,7 +44,7 @@ export const ProductList = () => {
     }
   };
 
-  const deleteProduct = async (productId: number) => {
+  const deleteProduct = async (productId: string) => {
     try {
       const { error } = await supabase
         .from('products')

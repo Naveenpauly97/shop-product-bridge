@@ -24,13 +24,11 @@ export const AddProductForm = () => {
     try {
       const { error } = await supabase
         .from('products')
-        .insert([
-          {
-            ownr_id: user.id,
-            prdt_name: productName,
-            prdt_desc: productDesc,
-          }
-        ]);
+        .insert({
+          ownr_id: user.id,
+          prdt_name: productName,
+          prdt_desc: productDesc,
+        });
 
       if (error) throw error;
 
