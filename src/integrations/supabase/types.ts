@@ -16,6 +16,12 @@ export type Database = {
           prdt_desc: string | null
           prdt_id: number
           prdt_name: string | null
+          product_category: string | null
+          product_image_url: string | null
+          product_price: number | null
+          product_sku: string | null
+          product_status: string | null
+          product_stock: number | null
         }
         Insert: {
           created_at?: string
@@ -23,6 +29,12 @@ export type Database = {
           prdt_desc?: string | null
           prdt_id?: number
           prdt_name?: string | null
+          product_category?: string | null
+          product_image_url?: string | null
+          product_price?: number | null
+          product_sku?: string | null
+          product_status?: string | null
+          product_stock?: number | null
         }
         Update: {
           created_at?: string
@@ -30,6 +42,12 @@ export type Database = {
           prdt_desc?: string | null
           prdt_id?: number
           prdt_name?: string | null
+          product_category?: string | null
+          product_image_url?: string | null
+          product_price?: number | null
+          product_sku?: string | null
+          product_status?: string | null
+          product_stock?: number | null
         }
         Relationships: []
       }
