@@ -25,7 +25,7 @@ export const AddProductForm = () => {
       const { error } = await supabase
         .from('products')
         .insert({
-          ownr_id: user.id as any, // Cast to bypass type check since we know this is correct
+          ownr_id: user.id,
           prdt_name: productName,
           prdt_desc: productDesc,
         });
@@ -40,7 +40,11 @@ export const AddProductForm = () => {
       // Reset form
       setProductName('');
       setProductDesc('');
+      
+      // Trigger a page refresh to show the new product
+      window.location.reload();
     } catch (error: any) {
+      console.error('Error adding product:', error);
       toast({
         title: "Error adding product",
         description: error.message,

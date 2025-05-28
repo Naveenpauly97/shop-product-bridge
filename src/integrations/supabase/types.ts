@@ -12,21 +12,21 @@ export type Database = {
       products: {
         Row: {
           created_at: string
-          ownr_id: number | null
+          ownr_id: string | null
           prdt_desc: string | null
           prdt_id: number
           prdt_name: string | null
         }
         Insert: {
           created_at?: string
-          ownr_id?: number | null
+          ownr_id?: string | null
           prdt_desc?: string | null
           prdt_id?: number
           prdt_name?: string | null
         }
         Update: {
           created_at?: string
-          ownr_id?: number | null
+          ownr_id?: string | null
           prdt_desc?: string | null
           prdt_id?: number
           prdt_name?: string | null

@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Trash2, Package } from 'lucide-react';
 
 interface Product {
-  prdt_id: string | number; // Allow both types to handle the transition
+  prdt_id: number;
   prdt_name: string;
   prdt_desc: string;
   created_at: string;
@@ -28,12 +28,13 @@ export const ProductList = () => {
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('ownr_id', user.id as any) // Cast to bypass type check
+        .eq('ownr_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setProducts(data as Product[] || []);
+      setProducts(data || []);
     } catch (error: any) {
+      console.error('Error fetching products:', error);
       toast({
         title: "Error fetching products",
         description: error.message,
@@ -44,12 +45,12 @@ export const ProductList = () => {
     }
   };
 
-  const deleteProduct = async (productId: string | number) => {
+  const deleteProduct = async (productId: number) => {
     try {
       const { error } = await supabase
         .from('products')
         .delete()
-        .eq('prdt_id', productId as any); // Cast to bypass type check
+        .eq('prdt_id', productId);
 
       if (error) throw error;
       
@@ -59,6 +60,7 @@ export const ProductList = () => {
         description: "Product has been successfully deleted.",
       });
     } catch (error: any) {
+      console.error('Error deleting product:', error);
       toast({
         title: "Error deleting product",
         description: error.message,
