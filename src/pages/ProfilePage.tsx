@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,10 +42,9 @@ const ProfilePage = () => {
           .eq('user_id', user.id)
           .single();
 
-        if (error) throw error;
+        if (error && error.code !== 'PGRST116') throw error;
 
         if (data) {
-          // console.log('data:', data);
           setProfileData(prev => ({
             ...prev,
             userName: data.user_name || '',
@@ -63,17 +63,44 @@ const ProfilePage = () => {
   }, [user]);
 
   const handleImageUpload = async (file: File) => {
-    if (!file) return;
+    if (!file || !user) return;
     
     try {
       setLoading(true);
+      setUploadProgress(0);
+      
+      // Validate file type and size
+      if (!file.type.startsWith('image/')) {
+        throw new Error('Please select a valid image file');
+      }
+      
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        throw new Error('File size must be less than 5MB');
+      }
+
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
+      const fileName = `profile_${user.id}_${Date.now()}.${fileExt}`;
+      const filePath = `profiles/${fileName}`;
+
+      // Create bucket if it doesn't exist
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const profileBucketExists = buckets?.some(bucket => bucket.name === 'profile-images');
+      
+      if (!profileBucketExists) {
+        const { error: bucketError } = await supabase.storage.createBucket('profile-images', {
+          public: true
+        });
+        if (bucketError) {
+          console.log('Bucket creation info:', bucketError.message);
+        }
+      }
 
       const { error: uploadError } = await supabase.storage
         .from('profile-images')
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
 
       if (uploadError) throw uploadError;
 
@@ -83,11 +110,16 @@ const ProfilePage = () => {
 
       setProfileData(prev => ({ ...prev, profilePicture: publicUrl }));
 
-      // Update profile picture in database
+      // Update or insert profile picture in database
       const { error: updateError } = await supabase
         .from('user_profiles')
-        .update({ profile_picture: publicUrl } as any)
-        .eq('user_id', user.id);
+        .upsert({ 
+          user_id: user.id, 
+          profile_picture: publicUrl,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
+        });
 
       if (updateError) throw updateError;
 
@@ -110,14 +142,14 @@ const ProfilePage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
+    
     setLoading(true);
 
     try {
       const updates = {
-        id:1,
         user_id: user.id,
         user_name: profileData.userName,
-        password: profileData.password,
         country: profileData.country,
         updated_at: new Date().toISOString(),
       };
@@ -125,7 +157,9 @@ const ProfilePage = () => {
       // Update profile
       const { error: profileError } = await supabase
         .from('user_profiles')
-        .upsert(updates);
+        .upsert(updates, {
+          onConflict: 'user_id'
+        });
 
       if (profileError) throw profileError;
 
@@ -156,8 +190,6 @@ const ProfilePage = () => {
       setLoading(false);
     }
   };
-  // console.log('Profile Data:', profileData);
-  // console.log('User:', user);
 
   return (
     <ProtectedRoute>

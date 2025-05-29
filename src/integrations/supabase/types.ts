@@ -53,24 +53,36 @@ export type Database = {
       }
       user_profiles: {
         Row: {
+          country: string | null
           created_at: string
           id: number
           password: string | null
+          profile_picture: string | null
+          updated_at: string | null
           user_email: string | null
+          user_id: string | null
           user_name: string | null
         }
         Insert: {
+          country?: string | null
           created_at?: string
           id?: number
           password?: string | null
+          profile_picture?: string | null
+          updated_at?: string | null
           user_email?: string | null
+          user_id?: string | null
           user_name?: string | null
         }
         Update: {
+          country?: string | null
           created_at?: string
           id?: number
           password?: string | null
+          profile_picture?: string | null
+          updated_at?: string | null
           user_email?: string | null
+          user_id?: string | null
           user_name?: string | null
         }
         Relationships: []

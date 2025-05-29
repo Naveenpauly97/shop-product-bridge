@@ -1,3 +1,4 @@
+
 import { useAuth } from '@/contexts/AuthContext';
 import { ProductList } from './ProductList';
 import { AddProductForm } from './AddProductForm';
@@ -5,7 +6,7 @@ import { ProductCategories } from './ProductCategories';
 import { ProductStats } from './ProductStats';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { LogOut, User, Package, Plus, BarChart3, Grid3X3, Menu, Settings, Bell } from 'lucide-react';
+import { LogOut, User, Package, Plus, BarChart3, Grid3X3, Menu, Bell } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -37,10 +38,10 @@ export const Dashboard = () => {
         const { data, error } = await supabase
           .from('user_profiles')
           .select('user_name, profile_picture')
-          .eq('id', user.id)
+          .eq('user_id', user.id)
           .single();
 
-        if (error) throw error;
+        if (error && error.code !== 'PGRST116') throw error;
 
         if (data) {
           setProfilePicture(data.profile_picture || '');
@@ -76,9 +77,9 @@ export const Dashboard = () => {
       <header className="bg-white shadow-sm border-b sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2 cursor-pointer" onClick={() => setActiveTab('overview')}>
-              <Package className="h-6 w-6 text-blue-600" />
-              <h1 className="text-xl font-semibold text-gray-900 hover:text-blue-600 transition-colors hidden sm:block">
+            <div className="flex items-center space-x-2 cursor-pointer" onClick={() => navigate('/dashboard')}>
+              <Package className="h-6 w-6 text-blue-600 flex-shrink-0" />
+              <h1 className="text-lg sm:text-xl font-semibold text-gray-900 hover:text-blue-600 transition-colors truncate">
                 Product Portal
               </h1>
             </div>
@@ -129,16 +130,16 @@ export const Dashboard = () => {
                     <Menu className="h-6 w-6" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="w-64">
                   <DropdownMenuLabel>
                     <div className="flex items-center space-x-2">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={profilePicture} alt={userName} />
                         <AvatarFallback>{userName?.charAt(0) || user?.email?.charAt(0)}</AvatarFallback>
                       </Avatar>
-                      <div>
-                        <p className="text-sm font-medium">{userName}</p>
-                        <p className="text-xs text-muted-foreground">{user?.email}</p>
+                      <div className="truncate">
+                        <p className="text-sm font-medium truncate">{userName}</p>
+                        <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                       </div>
                     </div>
                   </DropdownMenuLabel>
@@ -166,31 +167,31 @@ export const Dashboard = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Product Management</h2>
-          <p className="text-gray-600">Manage your product catalog, inventory, and categories efficiently.</p>
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Product Management</h2>
+          <p className="text-sm sm:text-base text-gray-600">Manage your product catalog, inventory, and categories efficiently.</p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              <span className="hidden sm:inline">Overview</span>
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1 sm:gap-2 h-auto p-1">
+            <TabsTrigger value="overview" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-2">
+              <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="hidden xs:inline">Overview</span>
             </TabsTrigger>
-            <TabsTrigger value="products" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              <span className="hidden sm:inline">Products</span>
+            <TabsTrigger value="products" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-2">
+              <Package className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="hidden xs:inline">Products</span>
             </TabsTrigger>
-            <TabsTrigger value="categories" className="flex items-center gap-2">
-              <Grid3X3 className="h-4 w-4" />
-              <span className="hidden sm:inline">Categories</span>
+            <TabsTrigger value="categories" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-2">
+              <Grid3X3 className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="hidden xs:inline">Categories</span>
             </TabsTrigger>
-            <TabsTrigger value="add-product" className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Add Product</span>
+            <TabsTrigger value="add-product" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-2">
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="hidden xs:inline">Add</span>
             </TabsTrigger>
-            <TabsTrigger value="inventory" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              <span className="hidden sm:inline">Inventory</span>
+            <TabsTrigger value="inventory" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3 py-2">
+              <Package className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="hidden xs:inline">Inventory</span>
             </TabsTrigger>
           </TabsList>
           
@@ -252,14 +253,7 @@ export const Dashboard = () => {
           </TabsContent>
           
           <TabsContent value="categories">
-            <Card>
-              <CardHeader>
-                <CardTitle>Product Categories</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ProductCategories />
-              </CardContent>
-            </Card>
+            <ProductCategories />
           </TabsContent>
           
           <TabsContent value="add-product">
