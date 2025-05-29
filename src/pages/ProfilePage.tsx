@@ -37,13 +37,14 @@ const ProfilePage = () => {
       try {
         const { data, error } = await supabase
           .from('user_profiles')
-          .select('user_name, profile_picture, country')
+          .select('id, user_name, profile_picture, country')
           .eq('user_id', user.id)
           .single();
 
         if (error) throw error;
 
         if (data) {
+          // console.log('data:', data);
           setProfileData(prev => ({
             ...prev,
             userName: data.user_name || '',
@@ -70,14 +71,9 @@ const ProfilePage = () => {
       const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
 
-      const { error: uploadError, data } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('profile-images')
-        .upload(filePath, file, {
-          onUploadProgress: (progress) => {
-            const percent = (progress.loaded / progress.total) * 100;
-            setUploadProgress(percent);
-          }
-        });
+        .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
@@ -90,7 +86,7 @@ const ProfilePage = () => {
       // Update profile picture in database
       const { error: updateError } = await supabase
         .from('user_profiles')
-        .update({ profile_picture: publicUrl })
+        .update({ profile_picture: publicUrl } as any)
         .eq('user_id', user.id);
 
       if (updateError) throw updateError;
@@ -118,8 +114,10 @@ const ProfilePage = () => {
 
     try {
       const updates = {
+        id:1,
         user_id: user.id,
         user_name: profileData.userName,
+        password: profileData.password,
         country: profileData.country,
         updated_at: new Date().toISOString(),
       };
@@ -158,6 +156,8 @@ const ProfilePage = () => {
       setLoading(false);
     }
   };
+  // console.log('Profile Data:', profileData);
+  // console.log('User:', user);
 
   return (
     <ProtectedRoute>

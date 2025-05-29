@@ -94,7 +94,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw error;
       }
       
-      console.log('Sign in successful:', data.user?.email);
+      console.log('Sign in successful:', data);
     } finally {
       setLoading(false);
     }

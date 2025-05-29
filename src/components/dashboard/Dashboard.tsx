@@ -37,7 +37,7 @@ export const Dashboard = () => {
         const { data, error } = await supabase
           .from('user_profiles')
           .select('user_name, profile_picture')
-          .eq('user_id', user.id)
+          .eq('id', user.id)
           .single();
 
         if (error) throw error;
