@@ -201,20 +201,20 @@ const ProfilePage = () => {
                 {/* Profile Picture */}
                 <div className="flex flex-col items-center space-y-4">
                   <div className="relative">
-                    <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-100">
+                    <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
                       {profileData.profilePicture ? (
                         <img
                           src={profileData.profilePicture}
                           alt="Profile"
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            e.currentTarget.src = 'https://via.placeholder.com/128';
+                            const target = e.target as HTMLImageElement;
+                            target.src = 'https://via.placeholder.com/128';
+                            target.onerror = null; // Prevent infinite loop
                           }}
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                          <ImagePlus className="w-8 h-8 text-gray-400" />
-                        </div>
+                        <ImagePlus className="w-8 h-8 text-gray-400" />
                       )}
                     </div>
                     <input
@@ -231,7 +231,7 @@ const ProfilePage = () => {
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="absolute bottom-0 right-0"
+                      className="absolute bottom-0 right-0 rounded-full"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={loading}
                     >
