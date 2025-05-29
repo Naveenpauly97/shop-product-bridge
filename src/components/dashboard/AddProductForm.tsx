@@ -36,7 +36,6 @@ export const AddProductForm = () => {
     productStatus: 'active'
   });
   const [loading, setLoading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -50,14 +49,9 @@ export const AddProductForm = () => {
       const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
 
-      const { error: uploadError, data } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('product-images')
-        .upload(filePath, file, {
-          onUploadProgress: (progress) => {
-            const percent = (progress.loaded / progress.total) * 100;
-            setUploadProgress(percent);
-          }
-        });
+        .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
@@ -79,7 +73,6 @@ export const AddProductForm = () => {
       });
     } finally {
       setLoading(false);
-      setUploadProgress(0);
     }
   };
 
