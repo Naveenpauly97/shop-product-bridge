@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -83,7 +82,7 @@ export const ProductCategories = () => {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
       {categories.map((category) => (
         <Card key={category.category} className="hover:shadow-md transition-shadow">
           <CardHeader className="pb-3">
@@ -110,4 +109,4 @@ export const ProductCategories = () => {
       ))}
     </div>
   );
-};
+});
