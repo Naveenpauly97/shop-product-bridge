@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,7 +41,21 @@ const ProfilePage = () => {
           .eq('user_id', user.id)
           .single();
 
-        if (error && error.code !== 'PGRST116') throw error;
+        // Handle case where no profile exists
+        if (error) {
+          if (error.code === 'PGRST116') {
+            // No profile found - this is okay, use defaults
+            setProfileData(prev => ({
+              ...prev,
+              userName: '',
+              country: 'US',
+              profilePicture: '',
+            }));
+            return;
+          }
+          // For other errors, we should still throw
+          throw error;
+        }
 
         if (data) {
           setProfileData(prev => ({
@@ -54,13 +67,18 @@ const ProfilePage = () => {
         }
       } catch (error) {
         console.error('Error fetching profile:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load user profile",
+          variant: "destructive",
+        });
       }
     };
 
     if (user) {
       fetchProfile();
     }
-  }, [user]);
+  }, [user, toast]);
 
   const handleImageUpload = async (file: File) => {
     if (!file || !user) return;
@@ -79,23 +97,11 @@ const ProfilePage = () => {
       }
 
       const fileExt = file.name.split('.').pop();
-      const fileName = `profile_${user.id}_${Date.now()}.${fileExt}`;
-      const filePath = `profiles/${fileName}`;
+      const fileName = `${user.id}_${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
 
-      // Create bucket if it doesn't exist
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const profileBucketExists = buckets?.some(bucket => bucket.name === 'profile-images');
-      
-      if (!profileBucketExists) {
-        const { error: bucketError } = await supabase.storage.createBucket('profile-images', {
-          public: true
-        });
-        if (bucketError) {
-          console.log('Bucket creation info:', bucketError.message);
-        }
-      }
-
-      const { error: uploadError } = await supabase.storage
+      // Upload file to storage
+      const { error: uploadError, data } = await supabase.storage
         .from('profile-images')
         .upload(filePath, file, {
           cacheControl: '3600',
@@ -104,34 +110,35 @@ const ProfilePage = () => {
 
       if (uploadError) throw uploadError;
 
+      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('profile-images')
         .getPublicUrl(filePath);
 
+      // Update state with new image URL
       setProfileData(prev => ({ ...prev, profilePicture: publicUrl }));
 
-      // Update or insert profile picture in database
+      // Update profile in database
       const { error: updateError } = await supabase
         .from('user_profiles')
         .upsert({ 
-          user_id: user.id, 
+          user_id: user.id,
           profile_picture: publicUrl,
           updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id'
         });
 
       if (updateError) throw updateError;
 
       toast({
-        title: "Profile picture updated",
-        description: "Your profile picture has been updated successfully.",
+        title: "Success",
+        description: "Profile picture updated successfully",
       });
+
     } catch (error: any) {
       console.error('Error uploading image:', error);
       toast({
-        title: "Error uploading image",
-        description: error.message,
+        title: "Error",
+        description: error.message || "Failed to upload image",
         variant: "destructive",
       });
     } finally {
@@ -157,9 +164,7 @@ const ProfilePage = () => {
       // Update profile
       const { error: profileError } = await supabase
         .from('user_profiles')
-        .upsert(updates, {
-          onConflict: 'user_id'
-        });
+        .upsert(updates);
 
       if (profileError) throw profileError;
 
@@ -173,8 +178,8 @@ const ProfilePage = () => {
       }
 
       toast({
-        title: "Profile updated",
-        description: "Your profile has been updated successfully.",
+        title: "Success",
+        description: "Profile updated successfully",
       });
 
       // Clear password field after successful update
@@ -182,8 +187,8 @@ const ProfilePage = () => {
     } catch (error: any) {
       console.error('Error updating profile:', error);
       toast({
-        title: "Error updating profile",
-        description: error.message,
+        title: "Error",
+        description: error.message || "Failed to update profile",
         variant: "destructive",
       });
     } finally {
@@ -210,6 +215,9 @@ const ProfilePage = () => {
                           src={profileData.profilePicture}
                           alt="Profile"
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = 'https://via.placeholder.com/128';
+                          }}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gray-100">

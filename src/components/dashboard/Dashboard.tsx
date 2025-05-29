@@ -1,4 +1,3 @@
-
 import { useAuth } from '@/contexts/AuthContext';
 import { ProductList } from './ProductList';
 import { AddProductForm } from './AddProductForm';
@@ -41,7 +40,17 @@ export const Dashboard = () => {
           .eq('user_id', user.id)
           .single();
 
-        if (error && error.code !== 'PGRST116') throw error;
+        // Handle case where no profile exists
+        if (error) {
+          if (error.code === 'PGRST116') {
+            // No profile found - this is okay, use defaults
+            setProfilePicture('');
+            setUserName('');
+            return;
+          }
+          // For other errors, we should still throw
+          throw error;
+        }
 
         if (data) {
           setProfilePicture(data.profile_picture || '');
@@ -49,11 +58,16 @@ export const Dashboard = () => {
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load user profile",
+          variant: "destructive",
+        });
       }
     };
 
     fetchUserProfile();
-  }, [user]);
+  }, [user, toast]);
 
   const handleSignOut = async () => {
     try {
