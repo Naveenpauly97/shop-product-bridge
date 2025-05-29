@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -8,6 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card } from '@/components/ui/card';
+import { ImagePlus, Link } from 'lucide-react';
 
 const PRODUCT_CATEGORIES = [
   'Electronics',
@@ -34,8 +36,52 @@ export const AddProductForm = () => {
     productStatus: 'active'
   });
   const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  const handleImageUpload = async (file: File) => {
+    if (!file) return;
+    
+    try {
+      setLoading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      const { error: uploadError, data } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file, {
+          onUploadProgress: (progress) => {
+            const percent = (progress.loaded / progress.total) * 100;
+            setUploadProgress(percent);
+          }
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      setFormData(prev => ({ ...prev, productImageUrl: publicUrl }));
+      toast({
+        title: "Image uploaded successfully",
+        description: "Your product image has been uploaded.",
+      });
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: "Error uploading image",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+      setUploadProgress(0);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,7 +138,7 @@ export const AddProductForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl">
+    <form onSubmit={handleSubmit} className="space-y-6 max-w-2xl mx-auto">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
           <Label htmlFor="productName">Product Name *</Label>
@@ -176,14 +222,65 @@ export const AddProductForm = () => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="productImageUrl">Image URL</Label>
-        <Input
-          id="productImageUrl"
-          type="url"
-          placeholder="https://example.com/image.jpg"
-          value={formData.productImageUrl}
-          onChange={(e) => setFormData(prev => ({ ...prev, productImageUrl: e.target.value }))}
-        />
+        <Label>Product Image</Label>
+        <Tabs defaultValue="url" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="url" className="flex items-center gap-2">
+              <Link className="h-4 w-4" />
+              Image URL
+            </TabsTrigger>
+            <TabsTrigger value="upload" className="flex items-center gap-2">
+              <ImagePlus className="h-4 w-4" />
+              Upload Image
+            </TabsTrigger>
+          </TabsList>
+          <TabsContent value="url">
+            <Input
+              type="url"
+              placeholder="https://example.com/image.jpg"
+              value={formData.productImageUrl}
+              onChange={(e) => setFormData(prev => ({ ...prev, productImageUrl: e.target.value }))}
+            />
+          </TabsContent>
+          <TabsContent value="upload">
+            <Card className="border-2 border-dashed p-4">
+              <div className="text-center">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImageUpload(file);
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={loading}
+                  className="w-full"
+                >
+                  {loading ? `Uploading... ${Math.round(uploadProgress)}%` : 'Choose Image'}
+                </Button>
+                <p className="mt-2 text-sm text-gray-500">
+                  Supported formats: JPG, PNG, GIF (max 5MB)
+                </p>
+              </div>
+            </Card>
+          </TabsContent>
+        </Tabs>
+        {formData.productImageUrl && (
+          <div className="mt-4">
+            <img
+              src={formData.productImageUrl}
+              alt="Product preview"
+              className="max-w-full h-auto rounded-lg shadow-sm"
+              style={{ maxHeight: '200px' }}
+            />
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">
