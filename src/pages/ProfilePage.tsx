@@ -34,26 +34,16 @@ const ProfilePage = () => {
 
   useEffect(() => {
     const fetchProfile = async () => {
+      if (!user) return;
+
       try {
         const { data, error } = await supabase
           .from('user_profiles')
-          .select('id, user_name, profile_picture, country')
+          .select('user_name, profile_picture, country')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
-        // Handle case where no profile exists
-        if (error) {
-          if (error.code === 'PGRST116') {
-            // No profile found - this is okay, use defaults
-            setProfileData(prev => ({
-              ...prev,
-              userName: '',
-              country: 'US',
-              profilePicture: '',
-            }));
-            return;
-          }
-          // For other errors, we should still throw
+        if (error && error.code !== 'PGRST116') {
           throw error;
         }
 
@@ -97,8 +87,8 @@ const ProfilePage = () => {
       }
 
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}_${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
 
       // Upload file to storage
       const { error: uploadError, data } = await supabase.storage
@@ -115,19 +105,20 @@ const ProfilePage = () => {
         .from('profile-images')
         .getPublicUrl(filePath);
 
-      // Update state with new image URL
-      setProfileData(prev => ({ ...prev, profilePicture: publicUrl }));
-
-      // Update profile in database
+      // Update profile in database with new image URL
       const { error: updateError } = await supabase
         .from('user_profiles')
         .upsert({ 
           user_id: user.id,
-          profile_picture: publicUrl,
-          updated_at: new Date().toISOString()
+          profile_picture: publicUrl
+        }, {
+          onConflict: 'user_id'
         });
 
       if (updateError) throw updateError;
+
+      // Update state with new image URL
+      setProfileData(prev => ({ ...prev, profilePicture: publicUrl }));
 
       toast({
         title: "Success",
@@ -158,13 +149,14 @@ const ProfilePage = () => {
         user_id: user.id,
         user_name: profileData.userName,
         country: profileData.country,
-        updated_at: new Date().toISOString(),
       };
 
       // Update profile
       const { error: profileError } = await supabase
         .from('user_profiles')
-        .upsert(updates);
+        .upsert(updates, {
+          onConflict: 'user_id'
+        });
 
       if (profileError) throw profileError;
 
