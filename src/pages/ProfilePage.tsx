@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ImagePlus, Loader2 } from 'lucide-react';
+import { ImagePlus, Loader2, User } from 'lucide-react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 
 const COUNTRIES = [
@@ -25,6 +25,7 @@ const ProfilePage = () => {
 
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [imageError, setImageError] = useState(false);
   const [profileData, setProfileData] = useState({
     userName: '',
     password: '',
@@ -76,6 +77,7 @@ const ProfilePage = () => {
     try {
       setLoading(true);
       setUploadProgress(0);
+      setImageError(false);
       
       // Validate file type and size
       if (!file.type.startsWith('image/')) {
@@ -91,7 +93,7 @@ const ProfilePage = () => {
       const filePath = `${user.id}/${fileName}`;
 
       // Upload file to storage
-      const { error: uploadError, data } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('profile-images')
         .upload(filePath, file, {
           cacheControl: '3600',
@@ -100,17 +102,19 @@ const ProfilePage = () => {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
+      // Create a signed URL that doesn't expire
+      const { data: { signedUrl } } = await supabase.storage
         .from('profile-images')
-        .getPublicUrl(filePath);
+        .createSignedUrl(filePath, 31536000); // 1 year expiry
+
+      if (!signedUrl) throw new Error('Failed to generate image URL');
 
       // Update profile in database with new image URL
       const { error: updateError } = await supabase
         .from('user_profiles')
         .upsert({ 
           user_id: user.id,
-          profile_picture: publicUrl
+          profile_picture: signedUrl
         }, {
           onConflict: 'user_id'
         });
@@ -118,7 +122,7 @@ const ProfilePage = () => {
       if (updateError) throw updateError;
 
       // Update state with new image URL
-      setProfileData(prev => ({ ...prev, profilePicture: publicUrl }));
+      setProfileData(prev => ({ ...prev, profilePicture: signedUrl }));
 
       toast({
         title: "Success",
@@ -127,6 +131,7 @@ const ProfilePage = () => {
 
     } catch (error: any) {
       console.error('Error uploading image:', error);
+      setImageError(true);
       toast({
         title: "Error",
         description: error.message || "Failed to upload image",
@@ -202,19 +207,15 @@ const ProfilePage = () => {
                 <div className="flex flex-col items-center space-y-4">
                   <div className="relative">
                     <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-                      {profileData.profilePicture ? (
+                      {profileData.profilePicture && !imageError ? (
                         <img
                           src={profileData.profilePicture}
                           alt="Profile"
                           className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = 'https://via.placeholder.com/128';
-                            target.onerror = null; // Prevent infinite loop
-                          }}
+                          onError={() => setImageError(true)}
                         />
                       ) : (
-                        <ImagePlus className="w-8 h-8 text-gray-400" />
+                        <User className="w-12 h-12 text-gray-400" />
                       )}
                     </div>
                     <input
