@@ -255,7 +255,7 @@ export const AddProductForm = () => {
                   disabled={loading}
                   className="w-full"
                 >
-                  {loading ? `Uploading... ${Math.round(uploadProgress)}%` : 'Choose Image'}
+                  {loading ? 'Uploading...' : 'Choose Image'}
                 </Button>
                 <p className="mt-2 text-sm text-gray-500">
                   Supported formats: JPG, PNG, GIF (max 5MB)
